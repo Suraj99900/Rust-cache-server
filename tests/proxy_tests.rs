@@ -5,8 +5,8 @@ use rust_cache_server::proxy::request::{filter_forward_headers, is_authenticated
 
 #[test]
 fn test_query_param_normalization() {
-    let key1 = CacheKey::new("GET", "/api/products", Some("b=2&a=1&c=3"));
-    let key2 = CacheKey::new("GET", "/api/products", Some("c=3&b=2&a=1"));
+    let key1 = CacheKey::new("GET", "/api/products", Some("b=2&a=1&c=3"), None, None);
+    let key2 = CacheKey::new("GET", "/api/products", Some("c=3&b=2&a=1"), None, None);
     assert_eq!(key1, key2);
     assert_eq!(key1.as_str(), "GET:/api/products:?a=1&b=2&c=3");
 }
@@ -25,7 +25,7 @@ fn test_method_cache_policy() {
     );
     assert_eq!(
         CachePolicy::determine_action(&Method::POST, &headers),
-        CacheAction::Bypass
+        CacheAction::Cacheable
     );
     assert_eq!(
         CachePolicy::determine_action(&Method::PUT, &headers),

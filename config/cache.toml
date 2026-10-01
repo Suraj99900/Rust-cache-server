@@ -1,27 +1,38 @@
 [server]
 host = "0.0.0.0"
-port = 8080
+port = 8081
 
 [backend]
-url = "https://dummyjson.com"
+url = "https://claim-central-uat.medixcel.in"
 timeout_seconds = 10
 
 [cache]
 enabled = true
-default_ttl_seconds = 60
+default_ttl_seconds = 60      # Fallback TTL if no rule matches
 max_memory_mb = 1024
 shards = 16
 eviction_policy = "lru"
-negative_ttl_seconds = 10
+negative_ttl_seconds = 10     # Cache 404/error responses for 10s
 
-[[cache.rules]]
-pattern = "/api/products/*"
-ttl_seconds = 300
-
-[[cache.rules]]
-pattern = "/api/users/*"
-ttl_seconds = 60
+# ─── Specific rules first (most specific → least specific) ───────────────────
 
 [[cache.rules]]
 pattern = "/api/config/*"
-ttl_seconds = 3600
+ttl_seconds = 3600            # Config data: cache 1 hour
+
+[[cache.rules]]
+pattern = "/api/products/*"
+ttl_seconds = 300             # Products: cache 5 minutes
+
+[[cache.rules]]
+pattern = "/api/users/*"
+ttl_seconds = 60              # Users: cache 1 minute
+
+[[cache.rules]]
+pattern = "/api/v1/*"
+ttl_seconds = 300             # Any v1 API: cache 5 minutes
+
+# ─── Catch-all: cache everything else (must be LAST) ─────────────────────────
+[[cache.rules]]
+pattern = "/*"
+ttl_seconds = 60              # All other routes: cache 1 minute

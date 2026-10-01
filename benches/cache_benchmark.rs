@@ -8,7 +8,7 @@ fn bench_cache_operations(c: &mut Criterion) {
     let ttl_manager = TtlManager::new(60, vec![]);
     let engine = CacheEngine::new(16, 1024 * 1024 * 100, EvictionPolicy::Lru, ttl_manager, None, true);
 
-    let key = CacheKey::new("GET", "/api/products/100", None);
+    let key = CacheKey::new("GET", "/api/products/100", None, None, None);
     let body = Bytes::from("{\"id\": 100, \"name\": \"Benchmark Item\"}");
     let headers = HeaderMap::new();
 
@@ -26,7 +26,7 @@ fn bench_cache_operations(c: &mut Criterion) {
         let mut i = 0;
         b.iter(|| {
             i += 1;
-            let k = CacheKey::new("GET", &format!("/api/products/{}", i), None);
+            let k = CacheKey::new("GET", &format!("/api/products/{}", i), None, None, None);
             engine.set(&k, "/api/products", 200, &headers, body.clone(), None);
         });
     });
@@ -53,7 +53,7 @@ fn bench_sharding_scalability(c: &mut Criterion) {
 
         // Pre-populate 1000 keys
         for i in 0..1000 {
-            let k = CacheKey::new("GET", &format!("/api/item/{}", i), None);
+            let k = CacheKey::new("GET", &format!("/api/item/{}", i), None, None, None);
             engine.set(&k, "/api/item", 200, &headers, body.clone(), None);
         }
 
@@ -64,7 +64,7 @@ fn bench_sharding_scalability(c: &mut Criterion) {
                 let mut i = 0usize;
                 b.iter(|| {
                     i = (i + 1) % 1000;
-                    let k = CacheKey::new("GET", &format!("/api/item/{}", i), None);
+                    let k = CacheKey::new("GET", &format!("/api/item/{}", i), None, None, None);
                     let res = engine.get(black_box(&k));
                     black_box(res)
                 });

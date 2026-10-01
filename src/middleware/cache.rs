@@ -20,6 +20,7 @@ use crate::{
     proxy::{
         build_hit_response, build_miss_response, is_response_cacheable, BackendForwarder,
     },
+    proxy::request::extract_jwt_user_id,
 };
 
 #[derive(Clone)]
@@ -78,7 +79,17 @@ async fn proxy_handler_inner(
 
     match action {
         CacheAction::Cacheable => {
-            let cache_key = CacheKey::new(method.as_str(), &path, query.as_deref());
+            let body_for_key = if body_bytes.is_empty() { None } else { Some(body_bytes.as_ref()) };
+            // Extract a stable user identity from the JWT (sub/user_id claim) rather than
+            // hashing the raw bearer token, which rotates on every token refresh.
+            let user_id_buf;
+            let auth_key: Option<&str> = if let Some(raw) = headers.get("authorization").and_then(|v| v.to_str().ok()) {
+                user_id_buf = extract_jwt_user_id(raw);
+                Some(user_id_buf.as_str())
+            } else {
+                None
+            };
+            let cache_key = CacheKey::new(method.as_str(), &path, query.as_deref(), body_for_key, auth_key);
 
             // 1. Check cache
             if let Some(cached) = state.cache.get(&cache_key) {
@@ -112,6 +123,7 @@ async fn proxy_handler_inner(
             let forwarder = state.forwarder.clone();
             let cache_engine = state.cache.clone();
             let method_clone = method.clone();
+            let method_for_cache = method.clone();
             let path_and_query_clone = path_and_query.clone();
             let headers_clone = headers.clone();
             let body_clone = body_bytes.clone();
@@ -135,7 +147,7 @@ async fn proxy_handler_inner(
                         .await
                         .map_err(|e| e.to_string())?;
 
-                    let is_cacheable = is_response_cacheable(backend_res.status, &backend_res.headers);
+                    let is_cacheable = is_response_cacheable(backend_res.status, &backend_res.headers, &method_for_cache);
                     if is_cacheable {
                         cache_engine.set(
                             &key_clone,

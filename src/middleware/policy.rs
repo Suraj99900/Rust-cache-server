@@ -19,13 +19,15 @@ impl CachePolicy {
         if is_authenticated(headers) {
             return match *method {
                 Method::PUT | Method::PATCH | Method::DELETE => CacheAction::Invalidate,
+                // POST is cached per-user: the auth token is hashed into the cache key
+                // so different users always get their own isolated cache entries
+                Method::POST => CacheAction::Cacheable,
                 _ => CacheAction::Bypass,
             };
         }
 
         match *method {
-            Method::GET | Method::HEAD => CacheAction::Cacheable,
-            Method::POST => CacheAction::Bypass,
+            Method::GET | Method::HEAD | Method::POST => CacheAction::Cacheable,
             Method::PUT | Method::PATCH | Method::DELETE => CacheAction::Invalidate,
             _ => CacheAction::Bypass,
         }

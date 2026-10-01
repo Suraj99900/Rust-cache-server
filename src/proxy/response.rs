@@ -4,7 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use bytes::Bytes;
-use http::HeaderMap;
+use http::{HeaderMap, Method};
 
 use crate::cache::CachedResponse;
 
@@ -22,11 +22,18 @@ const STRIPPED_RESPONSE_HEADERS: &[&str] = &[
 ];
 
 /// Determine if a backend response is cacheable based on status code and headers
-pub fn is_response_cacheable(status: StatusCode, headers: &HeaderMap) -> bool {
-    // Only cache successful GET responses or 404s (if negative caching enabled)
+pub fn is_response_cacheable(status: StatusCode, headers: &HeaderMap, method: &Method) -> bool {
+    // Only cache successful responses or 404s (if negative caching enabled)
     let status_cacheable = status.is_success() || status == StatusCode::NOT_FOUND;
     if !status_cacheable {
         return false;
+    }
+
+    // POST responses are intentionally cached per-user (auth token is hashed into the
+    // cache key), so Cache-Control: private / no-store from the backend does not apply —
+    // each user's response is fully isolated.
+    if *method == Method::POST {
+        return true;
     }
 
     if let Some(cache_control) = headers.get("cache-control") {

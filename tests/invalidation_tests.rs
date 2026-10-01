@@ -7,9 +7,9 @@ async fn test_path_invalidation() {
     let ttl_manager = TtlManager::new(60, vec![]);
     let engine = CacheEngine::new(4, 1024 * 1024, EvictionPolicy::Lru, ttl_manager, None, true);
 
-    let key1 = CacheKey::new("GET", "/api/users/100", None);
-    let key2 = CacheKey::new("GET", "/api/users/100", Some("fields=name"));
-    let key3 = CacheKey::new("GET", "/api/users/200", None);
+    let key1 = CacheKey::new("GET", "/api/users/100", None, None, None);
+    let key2 = CacheKey::new("GET", "/api/users/100", Some("fields=name"), None, None);
+    let key3 = CacheKey::new("GET", "/api/users/200", None, None, None);
 
     let headers = HeaderMap::new();
     let body = Bytes::from("{\"id\": 100}");

@@ -8,7 +8,7 @@ async fn test_cache_set_get_delete() {
     let ttl_manager = TtlManager::new(60, vec![]);
     let engine = CacheEngine::new(4, 1024 * 1024, EvictionPolicy::Lru, ttl_manager, None, true);
 
-    let key = CacheKey::new("GET", "/api/users/1", None);
+    let key = CacheKey::new("GET", "/api/users/1", None, None, None);
     let body = Bytes::from("{\"user_id\": 1}");
     let headers = HeaderMap::new();
 
@@ -33,7 +33,7 @@ async fn test_cache_expiration() {
     let ttl_manager = TtlManager::new(1, vec![]); // 1 sec default
     let engine = CacheEngine::new(4, 1024 * 1024, EvictionPolicy::Lru, ttl_manager, None, true);
 
-    let key = CacheKey::new("GET", "/api/temp", None);
+    let key = CacheKey::new("GET", "/api/temp", None, None, None);
     let body = Bytes::from("temp data");
     let headers = HeaderMap::new();
 
@@ -64,9 +64,9 @@ async fn test_lru_eviction() {
     let headers = HeaderMap::new();
     let body = Bytes::from("a".repeat(100)); // ~188 bytes each with struct overhead
 
-    let k1 = CacheKey::new("GET", "/item1", None);
-    let k2 = CacheKey::new("GET", "/item2", None);
-    let k3 = CacheKey::new("GET", "/item3", None);
+    let k1 = CacheKey::new("GET", "/item1", None, None, None);
+    let k2 = CacheKey::new("GET", "/item2", None, None, None);
+    let k3 = CacheKey::new("GET", "/item3", None, None, None);
 
     engine.set(&k1, "/item1", 200, &headers, body.clone(), None);
     engine.set(&k2, "/item2", 200, &headers, body.clone(), None);
@@ -91,7 +91,7 @@ async fn test_cache_stats() {
     let ttl_manager = TtlManager::new(60, vec![]);
     let engine = CacheEngine::new(2, 1024 * 1024, EvictionPolicy::Lru, ttl_manager, None, true);
 
-    let key = CacheKey::new("GET", "/test", None);
+    let key = CacheKey::new("GET", "/test", None, None, None);
     let _ = engine.get(&key); // Miss
 
     let headers = HeaderMap::new();
